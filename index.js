@@ -4,7 +4,7 @@ const PDFDocument = require('pdf-lib').PDFDocument;
 const fs = require('fs');
 const { spawnSync } = require('child_process');
 
-inkscapePath = 'D:\\programmi\\Inkscape\\bin\\inkscape.exe';
+inkscapePath = 'C:\\Program Files\\Inkscape\\bin\\inkscape.exe';
 
 (async () => {
     if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
