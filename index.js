@@ -14,8 +14,6 @@ inkscapePath = 'C:\\Program Files\\Inkscape\\bin\\inkscape.exe';
     let numberOfPages = Number(prompt('Input the number of pages: '))+1;
     let cookie = prompt('Input cookies header: ');
 
-    console.log(cookie);
-
     console.log('Processing...');
 
     const outputPdf = await PDFDocument.create();
