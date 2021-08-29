@@ -20,7 +20,7 @@ node index.js
 6. From there copy the beginning of the url of the file, leaving behind everything after the slash. It should look like something like this: `https://webreader.zanichelli.it/ContentServer/mvc/s3view/******/html5/******/OPS/images/` and paste it into the terminal and press enter
 7. Type `.svgz` and press enter
 8. Input the highest number of the pages you have seen and press enter
-9. Scroll down in the request information and where it says `cookie` copy and paste everything in the terminal and press enter
+9. Scroll down in the request information and where it says `cookie` copy and paste everything in the terminal (yes the crazzy repeating text is normal :L) and press enter
 10. Processing will start and the pages will be downloaded one by one and converted to pdf. Make sure to keep the tab where you have the book open active to prevent it from auto logging out, which would stop the downloading process. This process can take up to an hour for a 1k pages book depending on the speed of your machine.
 11. Once done the programm will ask for a file name, provide one without any speciall characters nor the file extention
 12. Wait for the file to be saved and you are done!
