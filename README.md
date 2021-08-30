@@ -17,7 +17,7 @@ node index.js
 3. Open your book in the web browser and open the inspect tools (F12 or CTRL + SHIFT + I), and go to the "network" tab and enable the `fetch/XHR` filter and make sure that `disable cache` is enabled
 4. With the aid of the index go to the last page of the book
 5. Look for the request with the pattern `page****.svgz` with the highest number, open it
-6. From there copy the beginning of the url of the file, leaving behind everything after the slash. It should look like something like this: `https://webreader.zanichelli.it/ContentServer/mvc/s3view/******/html5/******/OPS/images/` and paste it into the terminal and press enter
+6. From there copy the beginning of the url of the file, leaving behind everything after "page". It should look like something like this: `https://webreader.zanichelli.it/ContentServer/mvc/s3view/******/html5/******/OPS/images/page` and paste it into the terminal and press enter
 7. Type `.svgz` and press enter
 8. Input the highest number of the pages you have seen and press enter
 9. Scroll down in the request information and where it says `cookie` copy and paste everything in the terminal (yes the crazzy repeating text is normal :L) and press enter
