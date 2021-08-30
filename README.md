@@ -9,12 +9,12 @@ A tool to download your books from zanichelli into PDFs.
 ```shell
 npm i
 ```
-***(Optional step)*** This script to work requires to have inkscape(1.0 or more) installed on your machine, if you have not installed inkscape in the defaul folder please edit the script where it says `inkscapePath` to be the path of the `inkscape.exe`(usually found in the bin folder).
+***(Optional step)*** This script to work requires to have inkscape(1.0 or more) installed on your machine, if you don't have inkscape installed please do it now, and if you have not installed inkscape in the defaul folder please edit the script where it says `inkscapePath` to be the path of the `inkscape.exe`(usually found in the bin folder).
 2. Run the script with node
 ```shell
 node index.js
 ```
-3. Open you book in the web browser and open the inspect tools (F12 or CTRL + SHIFT + I), and open the "network" tab and enable the `fetch/XHR` filter and make sure that `disable cache` is enabled
+3. Open your book in the web browser and open the inspect tools (F12 or CTRL + SHIFT + I), and go to the "network" tab and enable the `fetch/XHR` filter and make sure that `disable cache` is enabled
 4. With the aid of the index go to the last page of the book
 5. Look for the request with the pattern `page****.svgz` with the highest number, open it
 6. From there copy the beginning of the url of the file, leaving behind everything after the slash. It should look like something like this: `https://webreader.zanichelli.it/ContentServer/mvc/s3view/******/html5/******/OPS/images/` and paste it into the terminal and press enter
