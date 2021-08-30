@@ -14,7 +14,7 @@ npm i
 ```shell
 node index.js
 ```
-3. Open you book in the web browser and open the inspect tools (F12 or CTRL + SHIFT + I), and open the "network" tab and enable the `fetch/XHR` filter
+3. Open you book in the web browser and open the inspect tools (F12 or CTRL + SHIFT + I), and open the "network" tab and enable the `fetch/XHR` filter and make sure that `disable cache` is enabled
 4. With the aid of the index go to the last page of the book
 5. Look for the request with the pattern `page****.svgz` with the highest number, open it
 6. From there copy the beginning of the url of the file, leaving behind everything after the slash. It should look like something like this: `https://webreader.zanichelli.it/ContentServer/mvc/s3view/******/html5/******/OPS/images/` and paste it into the terminal and press enter
