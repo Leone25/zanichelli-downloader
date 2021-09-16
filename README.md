@@ -9,7 +9,7 @@ A tool to download your books from zanichelli into PDFs.
 ```shell
 npm i
 ```
-***(Optional step)*** This script to work requires to have inkscape(1.0 or more) installed on your machine, if you don't have inkscape installed please do it now, and if you have not installed inkscape in the defaul folder please edit the script where it says `inkscapePath` to be the path of the `inkscape.exe`(usually found in the bin folder).
+***(Optional step, required on Linux or mac)*** This script to work requires to have inkscape(1.0 or more) installed on your machine, if you don't have inkscape installed please do it now, and if you have not installed inkscape in the defaul folder please edit the script where it says `inkscapePath` to be the path of the `inkscape.exe`(usually found in the bin folder).
 2. Run the script with node
 ```shell
 node index.js
