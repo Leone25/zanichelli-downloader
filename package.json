@@ -1,16 +1,21 @@
 {
   "name": "kitaboo-downloader",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
   "author": "Enrico",
+  "contributors": [
+    "Lorenzo Corallo"
+  ],
   "license": "MIT",
   "dependencies": {
     "node-fetch": "^2.6.1",
-    "pdf-lib": "^1.16.0",
-    "prompt-sync": "^4.2.0"
+    "pdfkit": "^0.12.3",
+    "prompt-sync": "^4.2.0",
+    "svg-to-pdfkit": "^0.1.8"
   }
 }
