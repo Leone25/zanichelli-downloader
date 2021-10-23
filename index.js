@@ -1,33 +1,46 @@
-const prompt = require('prompt-sync')({sigint: true});
-const fetch = require('node-fetch');
-const PDFDocument = require('pdf-lib').PDFDocument;
-const fs = require('fs');
-const { spawnSync } = require('child_process');
+const prompt = require("prompt-sync")({ sigint: true });
+const fetch = require("node-fetch");
+const SVGtoPDF = require("svg-to-pdfkit");
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
 
-inkscapePath = 'C:\\Program Files\\Inkscape\\bin\\inkscape.exe';
+PDFDocument.prototype.addSVG = function (svg, x, y, options) {
+  return SVGtoPDF(this, svg, x, y, options), this;
+};
 
 (async () => {
-    if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
-    
-    let urlStart = prompt('Input the start of the url: ');
-    let urlEnd = prompt('Input end of url (usually ".svgz"): ');
-    let numberOfPages = Number(prompt('Input the number of pages: '))+1;
-    let cookie = prompt('Input cookies header: ');
+  const date = new Date().toISOString().replace(/:/g, "-").split(".")[0];
+  let url, cookie;
 
-    console.log('Processing...');
+  do url = prompt("Input the url: ");
+  while (!url);
 
-    const outputPdf = await PDFDocument.create();
+  url = url.split("page");
+  const urlStart = url[0] + "page";
+  const numberOfPages = parseInt(url[1].split(".")[0]);
+  const urlEnd = "." + url[1].split(".")[1];
+  console.log(urlStart, numberOfPages, urlEnd);
 
-    for (i = 1; i < numberOfPages; i++) {
-        console.log(`Downloading ${i}/${numberOfPages-1}`);
-        let svg = await fetch(urlStart+('0000'+i).slice(-4)+urlEnd, {headers: {cookie}}).then((res) => res.text());
-        fs.writeFileSync('./temp/page'+('0000'+i).slice(-4)+".svg", svg);
-        console.log(spawnSync(inkscapePath, [`--export-filename=page${('0000'+i).slice(-4)}.pdf`, 'page'+('0000'+i).slice(-4)+'.svg'], {cwd: __dirname+"/temp/"}).stderr.toString());
-        const page = await PDFDocument.load(fs.readFileSync('./temp/page'+('0000'+i).slice(-4)+".pdf"));
-        const [firstDonorPage] = await outputPdf.copyPages(page, [0]);
-        outputPdf.addPage(firstDonorPage);
-    }
+  do cookie = prompt("Input cookies header: ");
+  while (!cookie);
+  cookie = cookie.slice(cookie.indexOf("kitaboo")); // remove everything before cookie value
 
-    fs.writeFileSync(prompt("Input file name:") + ".pdf", await outputPdf.save(), (e)=>{});
+  const fileName = (prompt("Input pdf file name: ") || date) + ".pdf";
 
+  console.log("Processing...");
+
+  const doc = new PDFDocument();
+  doc.pipe(fs.createWriteStream(fileName));
+
+  for (i = 1; i < numberOfPages + 1; i++) {
+    console.log(`Downloading ${i}/${numberOfPages}`);
+    const svg = await fetch(urlStart + `0000${i}`.slice(-4) + urlEnd, {
+      headers: { cookie },
+    }).then((res) => res.text());
+    doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
+    doc.addPage();
+  }
+
+  doc.end();
+  console.log("Done! You'll find the PDF in the directory of the script");
 })();
