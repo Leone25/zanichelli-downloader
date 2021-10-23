@@ -19,7 +19,6 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
   const urlStart = url[0] + "page";
   const numberOfPages = parseInt(url[1].split(".")[0]);
   const urlEnd = "." + url[1].split(".")[1];
-  console.log(urlStart, numberOfPages, urlEnd);
 
   do cookie = prompt("Input cookies header: ");
   while (!cookie);
