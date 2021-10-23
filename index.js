@@ -8,6 +8,11 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
   return SVGtoPDF(this, svg, x, y, options), this;
 };
 
+const sleep = (ms) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 (async () => {
   const date = new Date().toISOString().replace(/:/g, "-").split(".")[0];
   let url, cookie;
@@ -22,7 +27,7 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 
   do cookie = prompt("Input cookies header: ");
   while (!cookie);
-  cookie = cookie.slice(cookie.indexOf("kitaboo")); // remove everything before cookie value
+  if (cookie.toLowerCase().startsWith("cookie: ")) cookie = cookie.slice(8); // remove everything before cookie value
 
   const fileName = (prompt("Input pdf file name: ") || date) + ".pdf";
 
@@ -33,11 +38,12 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 
   for (i = 1; i < numberOfPages + 1; i++) {
     console.log(`Downloading ${i}/${numberOfPages}`);
+    if (numberOfPages % 20 === 0) await sleep(200);
     const svg = await fetch(urlStart + `0000${i}`.slice(-4) + urlEnd, {
       headers: { cookie },
     }).then((res) => res.text());
     doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
-    doc.addPage();
+    if (i < numberOfPages) doc.addPage();
   }
 
   doc.end();
