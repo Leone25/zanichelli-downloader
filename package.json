@@ -15,7 +15,8 @@
   "dependencies": {
     "node-fetch": "^2.6.1",
     "pdfkit": "^0.12.3",
-    "prompt-sync": "^4.2.0",
-    "svg-to-pdfkit": "^0.1.8"
+    "prompt-sync": "^4.1.6",
+    "svg-to-pdfkit": "^0.1.8",
+    "xml2js": "^0.4.23"
   }
 }
