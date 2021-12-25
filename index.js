@@ -9,16 +9,12 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
   return SVGtoPDF(this, svg, x, y, options), this;
 };
 
-const sleep = (ms) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-
 (async () => {
-  let url;
+  let url = process.argv[2];
 
-  do url = prompt("Input the url: ");
-  while (!url);
+  while (!url)
+    url = prompt("Input the url: ");
+  
 
   console.log("Processing...");
 
