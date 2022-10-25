@@ -87,7 +87,19 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 
   for (let [i ,itemref] of content.package.spine[0].itemref.entries()) {
     console.log(`Downloading ${itemref.$.idref}`);
-    const svg = await fetch(`https://webreader.zanichelli.it/ContentServer/mvc/s3view/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`, {headers:{cookie: cookies}}).then((res) => res.text());
+    let svg = null;
+    while (!svg) {
+      const abortController = new AbortController();
+      const promise = fetch(
+        `https://webreader.zanichelli.it/ContentServer/mvc/s3view/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
+        {headers:{cookie: cookies}, controller: abortController.signal}
+      ).then((res) => {
+        return res.text();
+      });
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      svg = await promise;
+      clearTimeout(timeoutId);
+    }
     doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
     if (i < content.package.spine[0].itemref.length-1) doc.addPage();
   }
