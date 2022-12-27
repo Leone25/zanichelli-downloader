@@ -19,7 +19,7 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
   console.log("Processing...");
 
   let redirectUrl = await fetch(url, {redirect: "manual"}).then((res)=>{
-    if (res.status == 302) return new URL(res.headers.get("location"));
+    if (res.status == 302) return new URL(res.headers.get("location").replace('#', ''));
     console.log("Error: bad url - " + res.status);
     process.exit(1);
   }).catch((err) => {
