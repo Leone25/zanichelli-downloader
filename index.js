@@ -83,7 +83,7 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
   }
 
   const doc = new PDFDocument();
-  doc.pipe(fs.createWriteStream(title + '.pdf'));
+  doc.pipe(fs.createWriteStream(title.replace(':', '') + '.pdf'));
 
   for (let [i ,itemref] of content.package.spine[0].itemref.entries()) {
     console.log(`Downloading ${itemref.$.idref}`);
