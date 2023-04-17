@@ -51,7 +51,7 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 			).then((res) => {
 				return res.text();
 			});
-			const timeoutId = setTimeout(() => controller.abort(), 5000)
+			const timeoutId = setTimeout(() => abortController.abort(), 5000)
 			svg = await promise;
 			clearTimeout(timeoutId);
 		}
