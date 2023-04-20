@@ -34,7 +34,7 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 	let items = {};
 
 	for (let item of content.package.manifest[0].item) {
-		if (item.$['media-type'] == 'image/svg+xml') items[item.$.id] = item.$.href;
+		if (['image/svg+xml', 'image/png', 'image/jpeg'].includes(item.$['media-type'])) items[item.$.id] = item.$.href;
 	}
 
 	const doc = new PDFDocument();
@@ -42,20 +42,54 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 
 	for (let [i, itemref] of content.package.spine[0].itemref.entries()) {
 		console.log(`Downloading ${itemref.$.idref}`);
-		let svg = null;
-		while (!svg) {
-			const abortController = new AbortController();
-			const promise = fetch(
-				`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
-				{ headers: { cookie: token }, controller: abortController.signal }
-			).then((res) => {
-				return res.text();
-			});
-			const timeoutId = setTimeout(() => abortController.abort(), 5000)
-			svg = await promise;
-			clearTimeout(timeoutId);
+		if (items[`images${itemref.$.idref}svgz`] !== undefined) {
+			let svg = null;
+			while (!svg) {
+				const abortController = new AbortController();
+				const promise = fetch(
+					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
+					{ headers: { cookie: token }, controller: abortController.signal }
+				).then((res) => {
+					return res.text();
+				});
+				const timeoutId = setTimeout(() => abortController.abort(), 5000)
+				svg = await promise;
+				clearTimeout(timeoutId);
+			}
+			doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
+		} else if (items[`images${itemref.$.idref}png`] !== undefined) {
+			let png = null;
+			while (!png) {
+				const abortController = new AbortController();
+				const promise = fetch(
+					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}png`]}`,
+					{ headers: { cookie: token }, controller: abortController.signal }
+				).then((res) => {
+					return res.arrayBuffer();
+				});
+				const timeoutId = setTimeout(() => abortController.abort(), 5000)
+				png = await promise;
+				clearTimeout(timeoutId);
+			}
+			doc.image(png, 0, 0, {fit: [doc.page.width, doc.page.height], align: 'center', valign: 'center'});
+		} else if (items[`images${itemref.$.idref}jpg`] !== undefined) {
+			let jpeg = null;
+			while (!jpeg) {
+				const abortController = new AbortController();
+				const promise = fetch(
+					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}jpg`]}`,
+					{ headers: { cookie: token }, controller: abortController.signal }
+				).then((res) => {
+					return res.arrayBuffer();
+				});
+				const timeoutId = setTimeout(() => abortController.abort(), 5000)
+				jpeg = await promise;
+				clearTimeout(timeoutId);
+			}
+			doc.image(jpeg, 0, 0, {fit: [doc.page.width, doc.page.height], align: 'center', valign: 'center'});
+		} else {
+			console.log(`Unable to find suitable format for ${itemref.$.idref}`);
 		}
-		doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
 		if (i < content.package.spine[0].itemref.length - 1) doc.addPage();
 	}
 
