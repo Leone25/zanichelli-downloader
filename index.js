@@ -1,17 +1,38 @@
-const prompt = require("prompt-sync")({ sigint: true });
-const fetch = require("node-fetch");
-var parseString = require('xml2js').parseStringPromise;
-const SVGtoPDF = require("svg-to-pdfkit");
-const PDFDocument = require("pdfkit");
-const fs = require("fs");
+import PromptSync from "prompt-sync";
+import fetch from "node-fetch";
+import { parseStringPromise as parseString } from "xml2js";
+import SVGtoPDF from "svg-to-pdfkit";
+import PDFDocument from "pdfkit";
+import fs from "fs";
+import aesjs from "aes-js";
+
+const prompt = PromptSync({ sigint: true });
 
 PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 	return SVGtoPDF(this, svg, x, y, options), this;
 };
 
+async function decryptFile(encryptionKey, encryptedData) {
+	const aesCtr = new aesjs.ModeOfOperation.cbc(Buffer.from(encryptionKey, "utf8"), Buffer.from(encryptionKey, "utf8"));
+	const decryptedBytes = aesCtr.decrypt(Buffer.from(encryptedData, "base64"));
+	const decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
+	for(let i=16;i>0;i--){
+		if (decryptedText.slice(decryptedText.length-i).every(e=>e==i)) {
+			decryptedText = decryptedText.slice(0, decryptedText.length-i);
+			break;
+		}
+	}
+	return decryptedText;
+}
+
 (async () => {
 	let ebookID = process.argv[2];
 	let token = process.argv[3];
+	let encryptionKey = process.argv[4];
+
+
+	while (!encryptionKey)
+		encryptionKey = prompt("Encryption key: ");
 
 	while (!ebookID)
 		ebookID = prompt("ebookID: ");
@@ -49,14 +70,17 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
 					{ headers: { cookie: token }, controller: abortController.signal }
-				).then((res) => {
-					return res.text();
+				).then(async (res) => {
+					if (res.headers.get('X-Amz-Server-Side-Encryption') === 'AES256')
+						return decryptFile(encryptionKey, await res.text());
+					return res.arrayBuffer();
 				});
-				const timeoutId = setTimeout(() => abortController.abort(), 5000)
+				const timeoutId = setTimeout(() => abortController.abort(), 10000);
 				svg = await promise;
 				clearTimeout(timeoutId);
 			}
-			doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
+			console.log(svg.toString().substring(0, 100))
+			doc.addSVG(svg.toString(), 0, 0, { preserveAspectRatio: "xMinYMin meet" });
 		} else if (items[`images${itemref.$.idref}png`] !== undefined) {
 			let png = null;
 			while (!png) {
@@ -64,10 +88,12 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}png`]}`,
 					{ headers: { cookie: token }, controller: abortController.signal }
-				).then((res) => {
+				).then(async (res) => {
+					if (res.headers.get('X-Amz-Server-Side-Encryption') === 'AES256')
+						return decryptFile(encryptionKey, await res.text());
 					return res.arrayBuffer();
 				});
-				const timeoutId = setTimeout(() => abortController.abort(), 5000)
+				const timeoutId = setTimeout(() => abortController.abort(), 10000);
 				png = await promise;
 				clearTimeout(timeoutId);
 			}
@@ -79,7 +105,9 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}jpg`]}`,
 					{ headers: { cookie: token }, controller: abortController.signal }
-				).then((res) => {
+				).then(async (res) => {
+					if (res.headers.get('X-Amz-Server-Side-Encryption') === 'AES256')
+						return decryptFile(encryptionKey, await res.body());
 					return res.arrayBuffer();
 				});
 				const timeoutId = setTimeout(() => abortController.abort(), 5000)
