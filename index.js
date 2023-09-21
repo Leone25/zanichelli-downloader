@@ -14,14 +14,14 @@ PDFDocument.prototype.addSVG = function (svg, x, y, options) {
 
 async function decryptFile(encryptionKey, encryptedData) {
 	const aesCtr = new aesjs.ModeOfOperation.cbc(Buffer.from(encryptionKey, "utf8"), Buffer.from(encryptionKey, "utf8"));
-	const decryptedBytes = aesCtr.decrypt(Buffer.from(encryptedData, "base64"));
-	const decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
+	let decryptedBytes = aesCtr.decrypt(Buffer.from(encryptedData, "base64"));
 	for(let i=16;i>0;i--){
-		if (decryptedText.slice(decryptedText.length-i).every(e=>e==i)) {
-			decryptedText = decryptedText.slice(0, decryptedText.length-i);
+		if (decryptedBytes.slice(decryptedBytes.length-i).every(e=>e==i)) {
+			decryptedBytes = decryptedBytes.slice(0, decryptedBytes.length-i);
 			break;
 		}
 	}
+	const decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
 	return decryptedText;
 }
 
@@ -79,8 +79,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 				svg = await promise;
 				clearTimeout(timeoutId);
 			}
-			console.log(svg.toString().substring(0, 100))
-			doc.addSVG(svg.toString(), 0, 0, { preserveAspectRatio: "xMinYMin meet" });
+			doc.addSVG(svg, 0, 0, { preserveAspectRatio: "xMinYMin meet" });
 		} else if (items[`images${itemref.$.idref}png`] !== undefined) {
 			let png = null;
 			while (!png) {
