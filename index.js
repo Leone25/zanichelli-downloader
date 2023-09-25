@@ -26,13 +26,20 @@ async function decryptFile(encryptionKey, encryptedData) {
 }
 
 (async () => {
-	let ebookID = process.argv[2];
-	let token = process.argv[3];
-	let encryptionKey = process.argv[4];
-
-
-	while (!encryptionKey)
-		encryptionKey = prompt("Encryption key: ");
+	let ebookID, token, encryptionKey, isBookEncrypted;
+	
+	while (isBookEncrypted === undefined) {
+		let q = prompt("Is book encrypted? [y/n]").toLowerCase();
+		if (q == "y") {
+			isBookEncrypted = true;
+		} else if (q == "n") {
+			isBookEncrypted = false;
+		}
+	}
+	
+	if (isBookEncrypted)
+		while (!encryptionKey)
+			encryptionKey = prompt("Encryption key: ");
 
 	while (!ebookID)
 		ebookID = prompt("ebookID: ");
@@ -71,9 +78,9 @@ async function decryptFile(encryptionKey, encryptedData) {
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
 					{ headers: { cookie: token }, controller: abortController.signal }
 				).then(async (res) => {
-					if (res.headers.get('X-Amz-Server-Side-Encryption') === 'AES256')
+					if (isBookEncrypted)
 						return decryptFile(encryptionKey, await res.text());
-					return res.arrayBuffer();
+					return res.text();
 				});
 				const timeoutId = setTimeout(() => abortController.abort(), 10000);
 				svg = await promise;
@@ -88,7 +95,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}png`]}`,
 					{ headers: { cookie: token }, controller: abortController.signal }
 				).then(async (res) => {
-					if (res.headers.get('X-Amz-Server-Side-Encryption') === 'AES256')
+					if (isBookEncrypted)
 						return decryptFile(encryptionKey, await res.text());
 					return res.arrayBuffer();
 				});
@@ -105,7 +112,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}jpg`]}`,
 					{ headers: { cookie: token }, controller: abortController.signal }
 				).then(async (res) => {
-					if (res.headers.get('X-Amz-Server-Side-Encryption') === 'AES256')
+					if (isBookEncrypted)
 						return decryptFile(encryptionKey, await res.body());
 					return res.arrayBuffer();
 				});
