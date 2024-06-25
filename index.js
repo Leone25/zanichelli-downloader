@@ -5,6 +5,7 @@ import SVGtoPDF from "svg-to-pdfkit";
 import PDFDocument from "pdfkit";
 import fs from "fs";
 import aesjs from "aes-js";
+import crypto from "crypto";
 
 const prompt = PromptSync({ sigint: true });
 
@@ -26,31 +27,49 @@ async function decryptFile(encryptionKey, encryptedData) {
 }
 
 (async () => {
-	let ebookID, token, encryptionKey, isBookEncrypted;
-	
-	while (isBookEncrypted === undefined) {
-		let q = prompt("Is book encrypted? [y/n]").toLowerCase();
-		if (q == "y") {
-			isBookEncrypted = true;
-		} else if (q == "n") {
-			isBookEncrypted = false;
-		}
-	}
-	
-	if (isBookEncrypted)
-		while (!encryptionKey)
-			encryptionKey = prompt("Encryption key: ");
+	let bookID, token;
 
-	while (!ebookID)
-		ebookID = prompt("ebookID: ");
+	while (!bookID)
+		bookID = prompt("bookID: ");
 		
 	while (!token)
-		token = prompt("Cookie: ");
-
+		token = prompt("usertoken: ");
 
 	console.log("Processing...");
 
-	let content = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/content.opf`, { headers: { cookie: token } }).then((res) => res.text()).then(parseString).catch((err) => {
+	console.log("Fetching book info...");
+
+	let bookInfo = await fetch(`https://zanichelliservices.kitaboo.eu/DistributionServices/services/api/reader/distribution/123/pc/book/details?bookID=${bookID}`, { headers: { usertoken: token } }).then((res) => res.json()).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
+
+	bookInfo = bookInfo.bookList[0].book;
+
+	let ebookID = bookInfo.ebookID;
+
+	console.log("Fetching cookie...");
+
+	let downloadBookResponse = await fetch(`https://webreader.zanichelli.it/downloadapi/auth/contentserver/book/123234234/HTML5/${bookID}/downloadBook?state=online`, { headers: { usertoken: token } });
+
+	let cookie = downloadBookResponse.headers.raw()['set-cookie'].map((cookie) => cookie.split(';')[0]).join('; ');
+	let downloadBook = await downloadBookResponse.json();
+	let privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
+	privateKey += await downloadBook.privateKey.match(/.{1,64}/g).join('\n');
+	privateKey += "\n-----END RSA PRIVATE KEY-----";
+	let authorization = downloadBook.jwtToken;
+	
+	console.log("Fetching encryption key...");
+	let encryptionKeyResponse = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/enc_resource.key`, { headers: { authorization } });
+	let encryptedEncryptionKey = Buffer.from(await encryptionKeyResponse.text(), 'base64');
+	const decrypted = crypto.privateDecrypt(
+		{
+			key: privateKey,
+			padding: crypto.constants.RSA_PKCS1_PADDING,
+		}, encryptedEncryptionKey);
+	let encryptionKey = decrypted.toString('utf-8');
+
+	let content = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/content.opf`, { headers: { cookie } }).then((res) => res.text()).then(parseString).catch((err) => {
 		console.log("Error: ", err);
 		process.exit(1);
 	});
@@ -76,11 +95,9 @@ async function decryptFile(encryptionKey, encryptedData) {
 				const abortController = new AbortController();
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
-					{ headers: { cookie: token }, controller: abortController.signal }
+					{ headers: { cookie }, controller: abortController.signal }
 				).then(async (res) => {
-					if (isBookEncrypted)
-						return decryptFile(encryptionKey, await res.text());
-					return res.text();
+					return decryptFile(encryptionKey, await res.text());
 				});
 				const timeoutId = setTimeout(() => abortController.abort(), 10000);
 				svg = await promise;
@@ -93,11 +110,9 @@ async function decryptFile(encryptionKey, encryptedData) {
 				const abortController = new AbortController();
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}png`]}`,
-					{ headers: { cookie: token }, controller: abortController.signal }
+					{ headers: { cookie }, controller: abortController.signal }
 				).then(async (res) => {
-					if (isBookEncrypted)
-						return decryptFile(encryptionKey, await res.text());
-					return res.arrayBuffer();
+					return decryptFile(encryptionKey, await res.text());
 				});
 				const timeoutId = setTimeout(() => abortController.abort(), 10000);
 				png = await promise;
@@ -110,11 +125,9 @@ async function decryptFile(encryptionKey, encryptedData) {
 				const abortController = new AbortController();
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}jpg`]}`,
-					{ headers: { cookie: token }, controller: abortController.signal }
+					{ headers: { cookie }, controller: abortController.signal }
 				).then(async (res) => {
-					if (isBookEncrypted)
-						return decryptFile(encryptionKey, await res.body());
-					return res.arrayBuffer();
+					return decryptFile(encryptionKey, await res.body());
 				});
 				const timeoutId = setTimeout(() => abortController.abort(), 5000)
 				jpeg = await promise;

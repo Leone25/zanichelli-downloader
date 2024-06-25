@@ -24,23 +24,20 @@ A tool to download your books from Zanichelli into PDFs.
 
 ## How to use
 
-1. Open https://my.zanichelli.it in your browser and open the menu of the book you'd like to download and open the web reader
-2. Open the dev tools (`f12` works), navigate to the network page in the dev tools and make sure that caching is disabled and that permanent log is enabled, then refresh the page
-3. In the developer tools open the console and copy `window.angularComponentRef.render.settings.encResource` and press enter, if the result is not `undefined`, then copy the output string (without any quotes)
-4. Open the folder in a terminal (as described above) and run the script with node typing:
+1. Open the folder of the script in a terminal (same way as installation) and run the script with node typing:
 
    ```shell
    node .
    ```
-5. If in step 3 you've got `undefined` say `n` and skip the next step, else `y`
+2. In your browser, open https://my.zanichelli.it in your browser and open the menu of the book you'd like to download and open the web reader
+3. Open the dev tools (`f12` works), navigate to the network page in the dev tools and make sure that caching is disabled and that permanent log is enabled, then refresh the page
+4. Find the file `downloadBook` (there is a filter bar on the top that you can use to search) and click on it
+5. Now look at the url, it should look something like this `https://zanichelliservices.kitaboo.eu/DistributionServices/services/api/reader/distribution/123/pc/book/details?bookID=########&t=#############`, copy the number after `bookID` and paste it in the terminal and press enter
+6. Now scroll down in the request information and find where it says `usertoken`, copy the value and paste it in the terminal and press enter (it is normal that it gets pasted multiple times, don't worry about it, it's entered correctly)
 6. Paste they encryption key you have obtained and press enter
-7. Go back to the developers tools and now look in the network tab, find the file `content.opf` and click on it
-8. It should now display the full url of the file and some other information (you may need to click on the headers sub-tab)
-9. From the displayed url copy the `ebookID`, which is a number repeated 2 times in the url, and paste it in the terminal and press enter
-10. Scroll down in the file information (back in the network page) and find where it says `Cookie:`, select everything after that (be aware, on firefox you'll need to toggle "Raw" to see the full header, as with long values they get shortened), copy and paste it in the terminal
-11. Wait, the book will be downloaded and saved to the script' directory
+7. Wait, the book will be downloaded and saved to the script' directory
 
-NOTE: You will have to do again all the steps if you want to download another book, the encryption key is different for every book
+NOTE: You will have to do again all the steps if you want to download another book, the encryption key is different for every book and every time you open the book
 
 ## Disclaimer
 
