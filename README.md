@@ -2,7 +2,7 @@
 
 A tool to download your books from Zanichelli into PDFs.
 
-**THIS DOES NOT WORK WITH BOOKS FROM BOOKTAB, FOR THAT PLEASE CHECK https://github.com/Leone25/booktab-downloader**
+# **THIS ONLY WORKS WITH BOOKS THAT HAVE THE RED `LaZ Ebook` LABEL NEXT TO THE "READ BOOK ONLINE" BUTTON, THE BOOKS THAT DON'T HAVE IT ARE BOOKTAB BOOKS, FOR THOSE PLEASE CHECK https://github.com/Leone25/booktab-downloader**
 
 ## Requirements
 
