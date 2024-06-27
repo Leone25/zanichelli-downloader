@@ -27,47 +27,35 @@ async function decryptFile(encryptionKey, encryptedData) {
 }
 
 (async () => {
-	let bookID, token;
+	let ebookID, cookie, rawPrivateKey, encryptedEncryptionKey;
 
-	while (!bookID)
-		bookID = prompt("bookID: ");
-		
-	while (!token)
-		token = prompt("usertoken: ");
+	while (!ebookID)
+		ebookID = prompt("ebookID: ");
+
+	while (!cookie)
+		cookie = prompt("Cookie: ");
+
+	while (!rawPrivateKey)
+		rawPrivateKey = prompt("Private Key: ");
+
+	while (!encryptedEncryptionKey)
+		encryptedEncryptionKey = prompt("Encrypted Encryption Key: ");
 
 	console.log("Processing...");
-
-	console.log("Fetching book info...");
-
-	let bookInfo = await fetch(`https://zanichelliservices.kitaboo.eu/DistributionServices/services/api/reader/distribution/123/pc/book/details?bookID=${bookID}`, { headers: { usertoken: token } }).then((res) => res.json()).catch((err) => {
-		console.log("Error: ", err);
-		process.exit(1);
-	});
-
-	bookInfo = bookInfo.bookList[0].book;
-
-	let ebookID = bookInfo.ebookID;
-
-	console.log("Fetching cookie...");
-
-	let downloadBookResponse = await fetch(`https://webreader.zanichelli.it/downloadapi/auth/contentserver/book/123234234/HTML5/${bookID}/downloadBook?state=online`, { headers: { usertoken: token } });
-
-	let cookie = downloadBookResponse.headers.raw()['set-cookie'].map((cookie) => cookie.split(';')[0]).join('; ');
-	let downloadBook = await downloadBookResponse.json();
-	let privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
-	privateKey += await downloadBook.privateKey.match(/.{1,64}/g).join('\n');
-	privateKey += "\n-----END RSA PRIVATE KEY-----";
-	let authorization = downloadBook.jwtToken;
 	
-	console.log("Fetching encryption key...");
-	let encryptionKeyResponse = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/enc_resource.key`, { headers: { authorization } });
-	let encryptedEncryptionKey = Buffer.from(await encryptionKeyResponse.text(), 'base64');
+	console.log("Decrypting Encryption Key...");
+
+	let privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
+	privateKey += rawPrivateKey.match(/.{1,64}/g).join('\n');
+	privateKey += "\n-----END RSA PRIVATE KEY-----";
 	const decrypted = crypto.privateDecrypt(
 		{
 			key: privateKey,
 			padding: crypto.constants.RSA_PKCS1_PADDING,
-		}, encryptedEncryptionKey);
+		}, Buffer.from(encryptedEncryptionKey, 'base64'));
 	let encryptionKey = decrypted.toString('utf-8');
+
+	console.log("Fetching book content...");
 
 	let content = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/content.opf`, { headers: { cookie } }).then((res) => res.text()).then(parseString).catch((err) => {
 		console.log("Error: ", err);
@@ -75,6 +63,11 @@ async function decryptFile(encryptionKey, encryptedData) {
 	});
 
 	// mention in content.metadata of render type, could be usefull in the future if other formats get added
+
+	if (content.Error) {
+		console.log("Error: ", ...content.Error.Code, ...content.Error.Message);
+		process.exit(1);
+	}
 
 	let title = content.package.metadata[0]["dc:title"][0];
 
