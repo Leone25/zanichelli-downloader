@@ -36,12 +36,25 @@ async function decryptFile(encryptionKey, encryptedData) {
 		cookie = prompt("Cookie: ");
 
 	while (!rawPrivateKey)
-		rawPrivateKey = prompt("Private Key: ");
+		rawPrivateKey = prompt("Private Key: ").trim();
+
+	if (rawPrivateKey.length != 848) {
+		console.log("Invalid private key length");
+		process.exit(1);
+	}
 
 	while (!encryptedEncryptionKey)
-		encryptedEncryptionKey = prompt("Encrypted Encryption Key: ");
+		encryptedEncryptionKey = prompt("Encrypted Encryption Key: ").trim();
 
-	if (encryptedEncryptionKey.length != 172) encryptedEncryptionKey = forge.util.decode64(encryptedEncryptionKey); // this is a fix for firefox, for some reason it encodes the string in base64 twice
+	for (let i = 0; i < 3; i++) { // fixes the double base64 encoding
+		if (encryptedEncryptionKey.length <= 128) break;
+		encryptedEncryptionKey = forge.util.decode64(encryptedEncryptionKey);
+	}
+
+	if (encryptedEncryptionKey.length != 128) {
+		console.log("Invalid encrypted encryption key length");
+		process.exit(1);
+	}
 
 	console.log("Processing...");
 	
@@ -52,7 +65,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 	privateKey += "\n-----END RSA PRIVATE KEY-----";
 
 	let key = forge.pki.privateKeyFromPem(privateKey);
-	let encryptionKey = key.decrypt(forge.util.decode64(encryptedEncryptionKey));
+	let encryptionKey = key.decrypt(encryptedEncryptionKey);
 
 	console.log("Fetching book content...");
 
