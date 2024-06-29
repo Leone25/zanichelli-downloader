@@ -5,7 +5,7 @@ import SVGtoPDF from "svg-to-pdfkit";
 import PDFDocument from "pdfkit";
 import fs from "fs";
 import aesjs from "aes-js";
-import crypto from "crypto";
+import forge from "node-forge";
 
 const prompt = PromptSync({ sigint: true });
 
@@ -48,12 +48,9 @@ async function decryptFile(encryptionKey, encryptedData) {
 	let privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
 	privateKey += rawPrivateKey.match(/.{1,64}/g).join('\n');
 	privateKey += "\n-----END RSA PRIVATE KEY-----";
-	const decrypted = crypto.privateDecrypt(
-		{
-			key: privateKey,
-			padding: crypto.constants.RSA_PKCS1_PADDING,
-		}, Buffer.from(encryptedEncryptionKey, 'base64'));
-	let encryptionKey = decrypted.toString('utf-8');
+
+	let key = forge.pki.privateKeyFromPem(privateKey);
+	let encryptionKey = key.decrypt(forge.util.decode64(encryptedEncryptionKey));
 
 	console.log("Fetching book content...");
 
