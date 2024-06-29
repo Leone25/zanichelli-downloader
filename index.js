@@ -41,6 +41,8 @@ async function decryptFile(encryptionKey, encryptedData) {
 	while (!encryptedEncryptionKey)
 		encryptedEncryptionKey = prompt("Encrypted Encryption Key: ");
 
+	if (encryptedEncryptionKey.length != 172) encryptedEncryptionKey = forge.util.decode64(encryptedEncryptionKey); // this is a fix for firefox, for some reason it encodes the string in base64 twice
+
 	console.log("Processing...");
 	
 	console.log("Decrypting Encryption Key...");
