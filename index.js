@@ -148,7 +148,14 @@ async function decryptFile(encryptionKey, encryptedData) {
 		process.exit(1);
 	});
 
-	bookReaderUrl = new URL(bookReaderUrl.split('#')[1], 'https://webreader.zanichelli.it');
+	bookReaderUrl = new URL(bookReaderUrl);
+
+	if (bookReaderUrl.host == 'web-booktab.zanichelli.it') {
+		console.log("You are trying to download a Booktab book, please check out https://github.com/leone25/booktab-downloader");
+		process.exit(2);
+	}
+
+	bookReaderUrl = new URL(bookReaderUrl.hash.substring(1), 'https://webreader.zanichelli.it');
 
 	let bookID = bookReaderUrl.searchParams.get('bookID');
 	let usertoken = bookReaderUrl.searchParams.get('usertoken');
