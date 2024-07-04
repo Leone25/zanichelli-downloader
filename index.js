@@ -6,6 +6,28 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import aesjs from "aes-js";
 import forge from "node-forge";
+import yargs from "yargs";
+
+const argv = yargs(process.argv.slice(2))
+	.option("username", {
+		alias: "u",
+		type: "string",
+		description: "Username(email)",
+	})
+	.option("password", {
+		alias: "p",
+		type: "string",
+		description: "Password",
+	})
+	.option("isbn", {
+		alias: "i",
+		type: "string",
+		description: "ISBN",
+	})
+	.help()
+	.alias("help", "h")
+	.argv;
+
 
 const prompt = PromptSync({ sigint: true });
 
@@ -27,49 +49,167 @@ async function decryptFile(encryptionKey, encryptedData) {
 }
 
 (async () => {
-	let ebookID, cookie, rawPrivateKey, encryptedEncryptionKey;
+	let {username, password} = argv;
 
-	while (!ebookID)
-		ebookID = prompt("ebookID: ");
+	while (!username)
+		username = prompt("Username(email): ");
 
-	while (!cookie)
-		cookie = prompt("Cookie: ");
+	while (!password)
+		password = prompt("Password: ");
 
-	while (!rawPrivateKey)
-		rawPrivateKey = prompt("Private Key: ").trim();
+	console.log("Logging in...");
 
-	if (rawPrivateKey.length != 848) {
-		console.log("Invalid private key length");
+	let token = await fetch("https://idp.zanichelli.it/v4/login/", {
+		method: "POST",
+		headers: {
+			"content-type": "application/x-www-form-urlencoded",
+		},
+		body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+	}).then((res) => res.json()).then((res) => res.token).catch((err) => {
+		console.log("Error: ", err);
 		process.exit(1);
-	}
+	});
 
-	while (!encryptedEncryptionKey)
-		encryptedEncryptionKey = prompt("Encrypted Encryption Key: ").trim();
+	let cookie = `token=${token}`;
 
-	for (let i = 0; i < 3; i++) { // fixes the double base64 encoding
-		if (encryptedEncryptionKey.length <= 128) break;
-		encryptedEncryptionKey = forge.util.decode64(encryptedEncryptionKey);
-	}
-
-	if (encryptedEncryptionKey.length != 128) {
-		console.log("Invalid encrypted encryption key length");
+	let loginCookies = await fetch("https://my.zanichelli.it/?loginMode=myZanichelli", {
+		headers: { cookie },
+	}).then((res) => res.headers.raw()['set-cookie'].map((cookie) => cookie.split(';')[0])).catch((err) => {
+		console.log("Error: ", err);
 		process.exit(1);
+	});
+
+	let dashboardCookies = {};
+
+	for (let loginCookie of loginCookies) {
+		let [key, value] = loginCookie.split('=');
+		dashboardCookies[key] = value;
 	}
+
+	console.log("Fetching available books...");
+
+	/*await fetch('https://api-catalogo.zanichelli.it/v3/dashboard/init', {
+		headers: { 'myz-token': dashboardCookies['myz_token'] },
+	}).then(res => res.text()).then(console.log).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});*/ // keeping this, perhaps it's needed in the future
+
+	await fetch('https://api-catalogo.zanichelli.it/v3/dashboard/user', {
+		headers: { 'myz-token': dashboardCookies['myz_token'] },
+	}).then(res => res.json()).then((res) => {
+		console.log(`Logged in as: ${res.firstName} ${res.lastName}`)
+	}).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	}); // we don't really care about the response, but apparently it's required to access the book list
+
+	let books = {};
+
+	let page = 1;
+
+	while (true) {
+		let response = await fetch(`https://api-catalogo.zanichelli.it/v3/dashboard/search?sort%5Bfield%5D=year_date&sort%5Bdirection%5D=desc&searchString&pageNumber=${page}&rows=100`, {
+			headers: { 'myz-token': dashboardCookies['myz_token'] },
+		}).then((res) => res.json()).catch((err) => {
+			console.log("Error: ", err);
+			process.exit(1);
+		});
+		if (response.data.pagination.pages == 0) {
+			console.log("No books found");
+			process.exit(0);
+		}
+		for (let license of response.data.licenses) {
+			if (license.volume.ereader_url == '') continue;
+			books[license.volume.isbn] = {
+				title: license.volume.opera.title,
+				ereader_url: license.volume.ereader_url,
+			}
+		}
+		if (response.data.pagination.pages == page) break;
+		page++;
+	}
+
+	console.log("Available books:");
+	console.table(books, ['title']);
+
+	let isbn = argv.isbn;
+
+	while (!isbn)
+		isbn = prompt("ISBN: ");
+	
+	console.log("Obtaining usertoken...");
+
+	let bookReaderUrl = await fetch(books[isbn].ereader_url, {
+		headers: { cookie },
+		redirect: 'manual',
+	}).then((res) => res.headers.get('location')).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
+
+	bookReaderUrl = new URL(bookReaderUrl.split('#')[1], 'https://webreader.zanichelli.it');
+
+	let bookID = bookReaderUrl.searchParams.get('bookID');
+	let usertoken = bookReaderUrl.searchParams.get('usertoken');
+
+	console.log("Exchangin usertoken...");
+
+	usertoken = await fetch(`https://microservices.kitaboo.eu/v1/zanichelli/user/123/pc/validateUserToken?usertoken=${encodeURIComponent(usertoken)}`).then(res => res.json()).then(res => res.userToken).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
+	
+	console.log("Fetching book details...");
+
+	let bookDetails = await fetch(`https://zanichelliservices.kitaboo.eu/DistributionServices/services/api/reader/distribution/123/pc/book/details?bookID=${bookID}`, {
+		headers: { usertoken },
+	}).then((res) => res.json()).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
+
+	let ebookID = bookDetails.bookList[0].book.ebookID;
+
+	console.log("Obtaining encryption encryption key..."); // yeah, that's not a typo
+
+	let downloadBook = await fetch(`https://webreader.zanichelli.it/downloadapi/auth/contentserver/book/123234234/HTML5/${bookID}/downloadBook?state=online`, {
+		headers: { usertoken },
+	}).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
+
+	let readerCookies = downloadBook.headers.raw()['set-cookie'].map((cookie) => cookie.split(';')[0]).join('; ');
+
+	downloadBook = await downloadBook.json();
+
+	let rawPrivateKey = downloadBook.privateKey;
+	let jwtToken = downloadBook.jwtToken; // note how jwt = json web token, so what you are saying is json web token token... gg
+
+	console.log("Fetching encrypted encryption key...")
+
+	let encryptedEncryptionKey = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/enc_resource.key`, {
+		headers: { authorization: jwtToken, cookie: readerCookies },
+	}).then((res) => res.text()).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
 
 	console.log("Processing...");
 	
-	console.log("Decrypting Encryption Key...");
+	console.log("Decrypting encryption key...");
 
 	let privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
 	privateKey += rawPrivateKey.match(/.{1,64}/g).join('\n');
 	privateKey += "\n-----END RSA PRIVATE KEY-----";
 
 	let key = forge.pki.privateKeyFromPem(privateKey);
-	let encryptionKey = key.decrypt(encryptedEncryptionKey);
+	let encryptionKey = key.decrypt(forge.util.decode64(encryptedEncryptionKey));
 
 	console.log("Fetching book content...");
 
-	let content = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/content.opf`, { headers: { cookie } }).then((res) => res.text()).then(parseString).catch((err) => {
+	let content = await fetch(`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/content.opf`, { headers: { cookie: readerCookies } }).then((res) => res.text()).then(parseString).catch((err) => {
 		console.log("Error: ", err);
 		process.exit(1);
 	});
@@ -100,7 +240,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 				const abortController = new AbortController();
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}svgz`]}`,
-					{ headers: { cookie }, controller: abortController.signal }
+					{ headers: { cookie: readerCookies }, controller: abortController.signal }
 				).then(async (res) => {
 					return decryptFile(encryptionKey, await res.text());
 				});
@@ -115,7 +255,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 				const abortController = new AbortController();
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}png`]}`,
-					{ headers: { cookie }, controller: abortController.signal }
+					{ headers: { cookie: readerCookies }, controller: abortController.signal }
 				).then(async (res) => {
 					return decryptFile(encryptionKey, await res.text());
 				});
@@ -130,7 +270,7 @@ async function decryptFile(encryptionKey, encryptedData) {
 				const abortController = new AbortController();
 				const promise = fetch(
 					`https://webreader.zanichelli.it/${ebookID}/html5/${ebookID}/OPS/${items[`images${itemref.$.idref}jpg`]}`,
-					{ headers: { cookie }, controller: abortController.signal }
+					{ headers: { cookie: readerCookies }, controller: abortController.signal }
 				).then(async (res) => {
 					return decryptFile(encryptionKey, await res.body());
 				});

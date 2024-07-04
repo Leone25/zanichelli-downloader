@@ -29,18 +29,12 @@ A tool to download your books from Zanichelli into PDFs.
    ```shell
    node .
    ```
-2. In your browser, open https://my.zanichelli.it in your browser and open the menu of the book you'd like to download and open the web reader
-3. Open the dev tools (`f12` works), navigate to the network page in the dev tools and make sure that caching is disabled and that permanent log is enabled, then refresh the page
-4. Find the `content.opf` (there is a filter bar on the top that you can use to search) file in the network tab and click on it
-5. From the url, copy the number that is repeated twice and paste it in the terminal and press enter
-6. Scroll down in the request information, and find where it says `Cookie`, copy the value and paste it in the terminal and press enter (it is normal that it gets pasted multiple times, don't worry about it, it's entered correctly)
-7. Find the file `downloadBook` (if there are two, choose the one that has `HTML5` in it's path) and click on it, and in the sub menu, open the `Preview` tab
-8. Find the line that says `privateKey` and copy the value (Right click on text > `Copy value`) and paste it in the terminal and press enter
-9. Find the file `enc_resource.key` and click on it, then click on the `Preview` tab
-10. Select everything, copy it and paste it in the terminal and press enter
-11. Wait, the book will be downloaded and saved to the script' directory
+2. Enter your zanichelli username(email) and password
+3. Wait for the list of books to load
+4. Enter the isbn of the book you want to download
+5. Wait, the book will be downloaded and saved to the script' directory
 
-NOTE: You will have to do again all the steps if you want to download another book, the encryption key is different for every book and every time you open the book
+NOTE: You will get logged out from your account while the script is running. Do NOT login in a browser at it will break the script while it's running.
 
 ## Disclaimer
 

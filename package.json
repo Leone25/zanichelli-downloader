@@ -19,7 +19,8 @@
     "pdfkit": "^0.12.3",
     "prompt-sync": "^4.1.6",
     "svg-to-pdfkit": "^0.1.8",
-    "xml2js": "^0.4.23"
+    "xml2js": "^0.4.23",
+    "yargs": "^17.7.2"
   },
   "type": "module"
 }
