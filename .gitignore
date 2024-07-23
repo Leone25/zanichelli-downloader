@@ -1,4 +1,5 @@
 *.pdf
+xps_*
 
 # Logs
 logs
