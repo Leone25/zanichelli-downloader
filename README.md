@@ -1,8 +1,6 @@
-# kitaboo-downloader
+# Zanichelli-downloader
 
 A tool to download your books from Zanichelli into PDFs.
-
-# **THIS ONLY WORKS WITH BOOKS THAT HAVE THE RED `LaZ Ebook` LABEL NEXT TO THE "READ BOOK ONLINE" BUTTON, THE BOOKS THAT DON'T HAVE IT ARE BOOKTAB BOOKS, FOR THOSE PLEASE CHECK https://github.com/Leone25/booktab-downloader**
 
 ## Requirements
 
@@ -33,6 +31,7 @@ A tool to download your books from Zanichelli into PDFs.
 3. Wait for the list of books to load
 4. Enter the isbn of the book you want to download
 5. Wait, the book will be downloaded and saved to the script' directory
+6. For some books, further actions may be required, follow the instructions on the terminal
 
 NOTE: You will get logged out from your account while the script is running. Do NOT login in a browser at it will break the script while it's running.
 
