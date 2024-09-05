@@ -308,7 +308,7 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 
 		if (pdf.status == 404) {
 			isXps = true;
-			i--;
+			i = 0; // restart the loop
 			console.log("DETECTED XPS FORMAT, DOWNLOADING INDIVIDUAL UNITS...");
 			await fs.promises.mkdir("xps_" + title, { recursive: true }); // adding prefix to gitignore
 			continue;
