@@ -511,11 +511,17 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 	await fetch('https://api-catalogo.zanichelli.it/v3/dashboard/user', {
 		headers: { 'myz-token': dashboardCookies['myz_token'] },
 	}).then(res => res.json()).then((res) => {
+		if(typeof res.firstName !== "string" || res.firstName == "unknown" || res.firstName == null)
+		{
+			console.log("Error: Email and/or password are not correct.");
+			process.exit(1);
+		}
+		
 		console.log(`Logged in as: ${res.firstName} ${res.lastName}`)
 	}).catch((err) => {
 		console.log("Error: ", err);
 		process.exit(1);
-	}); // we don't really care about the response, but apparently it's required to access the book list
+	});
 
 	let books = {};
 
