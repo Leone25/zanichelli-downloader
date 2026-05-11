@@ -521,7 +521,7 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 	}).catch((err) => {
 		console.log("Error: ", err);
 		process.exit(1);
-	});
+	});  // we don't really care about the response, but apparently it's required to access the book list
 
 	let books = {};
 
