@@ -526,7 +526,6 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 	let books = {};
 
 	let page = 1;
-	let notATeacher = false;
 
 	while (true) {
 		let response = await fetch(`https://api-catalogo.zanichelli.it/v3/dashboard/search?sort%5Bfield%5D=year_date&sort%5Bdirection%5D=desc&searchString&pageNumber=${page}&rows=100`, {
@@ -536,7 +535,6 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 			process.exit(1);
 		});
 		if (response.status == 403) {
-			notATeacher = true;
 			break;
 		}
 		response = await response.json();
@@ -556,14 +554,15 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 		page++;
 	}
 
-	if (notATeacher) {
-		let request = await fetch('https://api-catalogo.zanichelli.it/v3/dashboard/licenses/real', {
-			headers: { 'myz-token': dashboardCookies['myz_token'] },
-		}).then((res) => res.json()).catch((err) => {
-			console.log("Error: ", err);
-			process.exit(1);
-		});
-		for (let license of request.realLicenses) {
+	let requestRealLicenses = await fetch('https://api-catalogo.zanichelli.it/v3/dashboard/licenses/real', {
+		headers: { 'myz-token': dashboardCookies['myz_token'] },
+	}).catch((err) => {
+		console.log("Error: ", err);
+		process.exit(1);
+	});
+	if (requestRealLicenses.ok) {
+		let response = await requestRealLicenses.json();
+		for (let license of response.realLicenses) {
 			if (license.volume.ereader_url == '') continue;
 			books[license.volume.isbn] = {
 				title: license.volume.opera.title,
@@ -572,6 +571,7 @@ async function downloadBookTabBook(redirectUrl, cookie) { // bookReaderUrl,
 			}
 		}
 	}
+	
 
 	console.log("Available books:");
 	console.table(books, ['title']);
