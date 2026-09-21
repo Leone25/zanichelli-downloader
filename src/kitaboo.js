@@ -16,12 +16,6 @@ const READER = "https://webreader.zanichelli.it";
 const MICROSERVICES = "https://microservices.kitaboo.eu/v1/zanichelli";
 const DISTRIBUTION = "https://zanichelliservices.kitaboo.eu/DistributionServices/services/api/reader/distribution";
 
-const PAGE_FORMATS = [
-	{ suffix: "svgz", type: "svg" },
-	{ suffix: "png", type: "image" },
-	{ suffix: "jpg", type: "image" },
-];
-
 export async function downloadKitabooBook(bookReaderUrl) {
 	const readerUrl = new URL(bookReaderUrl.hash.substring(1), READER);
 	const bookID = readerUrl.searchParams.get("bookID");
@@ -108,25 +102,31 @@ async function downloadFixedBook(reader) {
 	const output = fs.createWriteStream(title.replace(/[^a-z0-9]/gi, "_") + ".pdf");
 	doc.pipe(output);
 
+	const downloadPage = (href) =>
+		retry(`Download of ${href}`, async () => {
+			const encryptedPage = await getText(opsUrl(href), { headers: readerHeaders(reader) });
+			return decryptFile(encryptionKey, encryptedPage);
+		});
+
 	const spine = content.package.spine[0].itemref;
 
 	for (const [i, itemref] of spine.entries()) {
 		const idref = itemref.$.idref;
 		console.log(`Downloading ${idref}`);
 
-		const format = PAGE_FORMATS.find(({ suffix }) => items[`images${idref}${suffix}`] !== undefined);
+		const svg = items[`images${idref}svgz`];
+		const png = items[`images${idref}png`];
+		const jpg = items[`images${idref}jpg`];
 
-		if (format) {
-			const href = items[`images${idref}${format.suffix}`];
-			const page = await retry(`Download of ${idref}`, async () =>
-				decryptFile(encryptionKey, await getText(opsUrl(href), { headers: readerHeaders(reader) }))
-			);
-
-			if (format.type == "svg") {
-				doc.addSVG(page.toString("utf8"), 0, 0, { preserveAspectRatio: "xMinYMin meet" });
-			} else {
-				doc.image(page, 0, 0, { fit: [doc.page.width, doc.page.height], align: "center", valign: "center" });
-			}
+		if (svg !== undefined) {
+			const page = await downloadPage(svg);
+			doc.addSVG(page.toString("utf8"), 0, 0, { preserveAspectRatio: "xMinYMin meet" });
+		} else if (png !== undefined) {
+			const page = await downloadPage(png);
+			doc.image(page, 0, 0, { fit: [doc.page.width, doc.page.height], align: "center", valign: "center" });
+		} else if (jpg !== undefined) {
+			const page = await downloadPage(jpg);
+			doc.image(page, 0, 0, { fit: [doc.page.width, doc.page.height], align: "center", valign: "center" });
 		} else {
 			console.log(`Unable to find suitable format for ${idref}`);
 		}

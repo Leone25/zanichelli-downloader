@@ -2,8 +2,6 @@ import { getJson, request, requestOk, parseSetCookie } from "./http.js";
 
 const CATALOG = "https://api-catalogo.zanichelli.it/v3";
 
-const WRONG_CREDENTIALS = "Email and/or password are not correct.";
-
 export async function login(username, password) {
 	const loginRequest = await request("https://idp.zanichelli.it/v4/login/", {
 		method: "POST",
@@ -11,12 +9,18 @@ export async function login(username, password) {
 		body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
 	});
 
-	if (loginRequest.status == 401) throw new Error(WRONG_CREDENTIALS);
+	if (loginRequest.status == 401) {
+		console.log("Error: Email and/or password are not correct.");
+		process.exit(1);
+	}
 	if (!loginRequest.ok) throw new Error(`Login failed with status ${loginRequest.status}`);
 
 	const { token } = await loginRequest.json();
 
-	if (!token) throw new Error(WRONG_CREDENTIALS);
+	if (!token) {
+		console.log("Error: Email and/or password are not correct.");
+		process.exit(1);
+	}
 
 	const cookie = `token=${token}`;
 
@@ -34,7 +38,10 @@ export async function login(username, password) {
 export async function fetchUser(myzToken) {
 	const user = await getJson(`${CATALOG}/dashboard/user`, { headers: { "myz-token": myzToken } });
 
-	if (typeof user.firstName !== "string" || user.firstName == "unknown") throw new Error(WRONG_CREDENTIALS);
+	if (typeof user.firstName !== "string" || user.firstName == "unknown") {
+		console.log("Error: Email and/or password are not correct.");
+		process.exit(1);
+	}
 
 	return user;
 } // we don't really care about the response, but apparently it's required to access the book list

@@ -111,5 +111,6 @@ async function fetchSpine(isbn, cookie) {
 		return parseString(await res.text());
 	}
 
-	throw new Error("Looks like this is not a downloadable book, try another one.");
+	console.log("Looks like this is not a downloadable book, try another one.");
+	process.exit(1);
 }

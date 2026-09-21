@@ -76,8 +76,4 @@ async function main() {
 	}
 }
 
-main().catch((err) => {
-	console.error("Error:", err.message);
-	if (process.env.DEBUG) console.error(err);
-	process.exit(1);
-});
+main();
