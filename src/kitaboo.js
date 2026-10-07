@@ -39,7 +39,7 @@ export async function downloadKitabooBook(bookReaderUrl) {
 
 	const downloadBookRequest = await requestOk(
 		`${READER}/downloadapi/auth/contentserver/book/123234234/HTML5/${bookID}/downloadBook?state=online`,
-		{ headers: { Referer: READER_ORIGIN, usertoken } }
+		{ headers: { Referer: READER_ORIGIN, usertoken, "Accept-Encoding": "identity" } }
 	);
 
 	const downloadBook = await downloadBookRequest.json();
