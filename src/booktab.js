@@ -28,6 +28,15 @@ export async function downloadBookTabBook(redirectUrl, sessionCookie, isbnOverri
 
 	const title = (spine.spine || spine.config.volume[0].settings[0]).volumetitle[0].trim().replace(/[^a-z0-9]/gi, "_");
 
+	const outputDir = process.cwd();
+	function resolveSafePath(...segments) {
+		const resolved = path.resolve(outputDir, ...segments);
+		if (resolved !== outputDir && !resolved.startsWith(outputDir + path.sep)) {
+			throw new Error("Resolved output path escapes the output directory");
+		}
+		return resolved;
+	}
+
 	console.log("Downloading book...");
 
 	const units = (spine.spine ? spine.spine.unit : spine.config.volume[0].units[0].unit)
@@ -64,7 +73,7 @@ export async function downloadBookTabBook(redirectUrl, sessionCookie, isbnOverri
 
 			if (!xpsRequest.ok) throw new Error(`Unable to download unit ${i + 1} (status ${xpsRequest.status})`);
 
-			await fs.promises.writeFile(path.join("xps_" + title, `${i}_${unit}.xps`), await xpsRequest.buffer());
+			await fs.promises.writeFile(resolveSafePath("xps_" + title, `${i}_${unit}.xps`), await xpsRequest.buffer());
 			continue;
 		}
 
@@ -76,7 +85,7 @@ export async function downloadBookTabBook(redirectUrl, sessionCookie, isbnOverri
 			isXps = true;
 			i = -1; // restart the loop
 			console.log("DETECTED XPS FORMAT, DOWNLOADING INDIVIDUAL UNITS...");
-			await fs.promises.mkdir("xps_" + title, { recursive: true }); // adding prefix to gitignore
+			await fs.promises.mkdir(resolveSafePath("xps_" + title), { recursive: true }); // adding prefix to gitignore
 			continue;
 		}
 
@@ -94,7 +103,7 @@ export async function downloadBookTabBook(redirectUrl, sessionCookie, isbnOverri
 		console.log("If anyone would like to contribute a script to automate this process, feel free to do so");
 	} else {
 		console.log("Saving...");
-		await pdfMerger.save(title + ".pdf");
+		await pdfMerger.save(resolveSafePath(title + ".pdf"));
 		console.log("Done! You'll find the PDF in the directory of the script");
 	}
 }
