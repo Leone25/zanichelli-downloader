@@ -1,4 +1,5 @@
 import { getJson, request, requestOk, parseSetCookie } from "./http.js";
+import { ask } from "./prompts.js";
 
 const CATALOG = "https://api-catalogo.zanichelli.it/v3";
 
@@ -32,7 +33,32 @@ export async function login(username, password) {
 		dashboardCookies[loginCookie.slice(0, separator)] = loginCookie.slice(separator + 1);
 	}
 
-	return { cookie, myzToken: dashboardCookies["myz_token"] };
+	let myzToken = dashboardCookies["myz_token"];
+
+	if (!myzToken) {
+		console.log("Automated token recovery failed. Trying to find token in page source...");
+		const html = await res.text();
+		const match = html.match(/myz_token\s*[:=]\s*["']([^"']+)["']/);
+		if (match) {
+			myzToken = match[1];
+			console.log("Token found in page source!");
+		}
+	}
+
+	if (!myzToken) {
+		console.log("\n--- Manual Token Required ---");
+		console.log("The automated login process could not retrieve the 'myz_token'.");
+		console.log("Please follow these steps:");
+		console.log("1. Open your browser and log in to: https://my.zanichelli.it");
+		console.log("2. Right-click anywhere on the page and select 'Inspect' (or press F12).");
+		console.log("3. Go to the 'Application' tab (Chrome/Edge) or 'Storage' tab (Firefox).");
+		console.log("4. In the left sidebar, expand 'Cookies' and select 'https://my.zanichelli.it'.");
+		console.log("5. Find the cookie named 'myz_token' and copy its Value.");
+		console.log("-----------------------------\n");
+		myzToken = ask("Paste the myz_token value here: ");
+	}
+
+	return { cookie, myzToken };
 }
 
 export async function fetchUser(myzToken) {
