@@ -36,14 +36,14 @@ async function main() {
 
 	console.log("Logging in...");
 
-	const { cookie, myzToken } = await login(username, password);
+	const { cookie } = await login(username, password);
 
-	const user = await fetchUser(myzToken);
+	const user = await fetchUser(cookie);
 	console.log(`Logged in as: ${user.firstName} ${user.lastName}`);
 
 	console.log("Fetching available books...");
 
-	const books = await fetchBooks(myzToken);
+	const books = await fetchBooks(cookie);
 
 	if (Object.keys(books).length == 0) {
 		console.log("No books found");

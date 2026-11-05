@@ -1,4 +1,4 @@
-import { getJson, request, requestOk, parseSetCookie } from "./http.js";
+import { getJson, request } from "./http.js";
 
 const CATALOG = "https://api-catalogo.zanichelli.it/v3";
 
@@ -22,21 +22,13 @@ export async function login(username, password) {
 		process.exit(1);
 	}
 
-	const cookie = `token=${token}`;
-
-	const res = await requestOk("https://my.zanichelli.it/?loginMode=myZanichelli", { headers: { cookie } });
-
-	const dashboardCookies = {};
-	for (const loginCookie of parseSetCookie(res)) {
-		const separator = loginCookie.indexOf("=");
-		dashboardCookies[loginCookie.slice(0, separator)] = loginCookie.slice(separator + 1);
-	}
-
-	return { cookie, myzToken: dashboardCookies["myz_token"] };
+	// The catalog now accepts the IDP session cookie directly. The home page
+	// no longer exchanges it for a myz_token cookie.
+	return { cookie: `token=${token}` };
 }
 
-export async function fetchUser(myzToken) {
-	const user = await getJson(`${CATALOG}/dashboard/user`, { headers: { "myz-token": myzToken } });
+export async function fetchUser(cookie) {
+	const user = await getJson(`${CATALOG}/dashboard/user`, { headers: { cookie } });
 
 	if (typeof user.firstName !== "string" || user.firstName == "unknown") {
 		console.log("Error: Email and/or password are not correct.");
@@ -46,15 +38,8 @@ export async function fetchUser(myzToken) {
 	return user;
 } // we don't really care about the response, but apparently it's required to access the book list
 
-/*await fetch('https://api-catalogo.zanichelli.it/v3/dashboard/init', {
-	headers: { 'myz-token': dashboardCookies['myz_token'] },
-}).then(res => res.text()).then(console.log).catch((err) => {
-	console.log("Error: ", err);
-	process.exit(1);
-});*/ // keeping this, perhaps it's needed in the future
-
-export async function fetchBooks(myzToken) {
-	const headers = { "myz-token": myzToken };
+export async function fetchBooks(cookie) {
+	const headers = { cookie };
 	const books = {};
 
 	for (let page = 1; ; page++) {
